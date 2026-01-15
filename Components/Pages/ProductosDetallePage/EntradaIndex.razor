@@ -1,0 +1,87 @@
+﻿@page "/Entradas/Index"
+@using GestionEntradaInventario.Models
+@using GestionEntradaInventario.Services
+@using Microsoft.AspNetCore.Authorization
+@inject EntradasServices entradasService
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+<div class="container mt-3">
+    <div class="card shadow-sm bg-white">
+        <div class="card-header bg-white text-center border-bottom-0 pt-3">
+            <h4 class="mb-0">Registro de Entradas de Inventario</h4>
+            <div class="text-end" style="margin-top: -30px;">
+                <a href="/Entradas/Create" class="btn btn-primary"><i class="bi bi-plus-square"></i> Crear</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label><strong>Fecha desde</strong></label>
+                    <input type="date" class="form-control" @bind="desde" />
+                </div>
+                <div class="col-md-3">
+                    <label><strong>Fecha hasta</strong></label>
+                    <input type="date" class="form-control" @bind="hasta" />
+                </div>
+                <div class="col-md-3">
+                    <label><strong>Filtrar por</strong></label>
+                    <select class="form-select" @bind="filtro">
+                        <option value="id">ID</option>
+                        <option value="concepto">Concepto</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label><strong>Búsqueda</strong></label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Buscar..." @bind="busqueda" />
+                        <button class="btn btn-outline-primary" @onclick="Consultar"><i class="bi bi-search"></i></button>
+                    </div>
+                </div>
+            </div>
+            <table class="table border-top">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Concepto</th>
+                        <th>Total</th>
+                        <th>Editar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in listaEntradas)
+                    {
+                        <tr>
+                            <td>@e.EntradaId</td>
+                            <td>@e.Fecha.ToShortDateString()</td>
+                            <td>@e.Concepto</td>
+                            <td>@e.Total.ToString("N2")</td>
+                            <td>
+                                <a href="/Entradas/Edit/@e.EntradaId" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square"></i></a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Entradas> listaEntradas = new();
+    private DateTime desde = DateTime.Now.AddMonths(-1), hasta = DateTime.Now;
+    private string filtro = "concepto", busqueda = "";
+
+    protected override async Task OnInitializedAsync() => await Consultar();
+
+    private async Task Consultar()
+    {
+        listaEntradas = await entradasService.Listar(e =>
+            e.Fecha.Date >= desde.Date && e.Fecha.Date <= hasta.Date &&
+            (string.IsNullOrEmpty(busqueda) ||
+            (filtro == "id" && e.EntradaId.ToString() == busqueda) ||
+            (filtro == "concepto" && e.Concepto.Contains(busqueda, StringComparison.OrdinalIgnoreCase)))
+        );
+    }
+}
