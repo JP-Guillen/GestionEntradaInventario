@@ -1,0 +1,80 @@
+﻿@page "/Productos/Index"
+@using GestionEntradaInventario.Models
+@using GestionEntradaInventario.Services
+@using Microsoft.AspNetCore.Authorization
+@inject EntradasServices entradasService
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+<div class="container mt-3">
+    <div class="card shadow-sm bg-white">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center border-bottom-0">
+            <h4 class="mb-0">Registro de Productos</h4>
+            <a href="/Productos/Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Crear</a>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label><strong>Filtrar por</strong></label>
+                    <select class="form-select" @bind="filtro">
+                        <option value="id">ID</option>
+                        <option value="descripcion">Descripción</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label><strong>Búsqueda</strong></label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Buscar..." @bind="valorFiltro" />
+                        <button class="btn btn-outline-primary" @onclick="Consultar"><i class="bi bi-search"></i></button>
+                    </div>
+                </div>
+            </div>
+            <table class="table table-hover border-top">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Descripción</th>
+                        <th>Costo</th>
+                        <th>Precio</th>
+                        <th>Existencia</th>
+                        <th>Editar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in listaProductos)
+                    {
+                        <tr>
+                            <td>@p.ProductoId</td>
+                            <td>@p.Descripcion</td>
+                            <td>@p.Costo.ToString("N2")</td>
+                            <td>@p.Precio.ToString("N2")</td>
+                            <td>@p.Existencia</td>
+                            <td>
+                                <a href="/Productos/Edit/@p.ProductoId" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square"></i></a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Productos> listaProductos = new();
+    private string filtro = "descripcion";
+    private string valorFiltro = "";
+
+    protected override async Task OnInitializedAsync() => await Consultar();
+
+    private async Task Consultar()
+    {
+        var todos = await entradasService.ListarProductos();
+        if (string.IsNullOrWhiteSpace(valorFiltro))
+            listaProductos = todos;
+        else if (filtro == "id" && int.TryParse(valorFiltro, out int id))
+            listaProductos = todos.Where(p => p.ProductoId == id).ToList();
+        else
+            listaProductos = todos.Where(p => p.Descripcion.Contains(valorFiltro, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+}
